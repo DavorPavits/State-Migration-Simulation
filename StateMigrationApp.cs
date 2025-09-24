@@ -24,24 +24,45 @@ namespace StateMigrationApp
         {
             Console.WriteLine($"---Starting Application on {ContainerName}---");
 
-            
-            //Try to load existing state
-            LoadState();
+            //Handle Shut down signals from docker
+            var shutdownSignal = new ManualResetEvent(false);
+            void HandleShutDown()
+            {
+                if (_running)
+                {
+                    Console.WriteLine("\nShutdown signal received. Saving final state...");
+                    _running = false;
+                    SaveState();
+                    shutdownSignal.Set(); //Allow the Main method to exit
+                }
+            }
 
-            //Update container name
-            _state.ContainerName = ContainerName;
+            //Hook the SIGTERM signal 
+            System.Runtime.Loader.AssemblyLoadContext.Default.Unloading += context => HandleShutDown();
 
             //Handle shutdown graefully
             Console.CancelKeyPress += (sender, e) =>
             {
                 e.Cancel = true;
                 Console.WriteLine("\nShutdown signal received. Saving State...");
-                SaveState();
-                _running = false;
+                HandleShutDown();
             };
 
+            //Try to load existing state
+            LoadState();
+
+            //Update container name
+            _state.ContainerName = ContainerName;
+
+            //Start the main application loop in the background
+            _ = RunApp();
+
+            //Wait until the shutdown signal is received
+            shutdownSignal.WaitOne();
+
+            Console.WriteLine($"[{ContainerName}] Application has shut down gracefully.");
             //Main application loop
-            await RunApp();
+            //await RunApp();
         }
         static async Task RunApp()
         {
@@ -67,8 +88,18 @@ namespace StateMigrationApp
                     Console.WriteLine($"[{ContainerName}] State checkpoint saved");
                 }
 
-                //Simulate work time
-                await Task.Delay(3000);
+                try
+                {
+                    //Simulate work time
+                    for (int i = 0; i < 3 && _running; i++)
+                    {
+                        await Task.Delay(1000);
+                    }
+                }
+                catch(TaskCanceledException)
+                {
+                    
+                }
             }
 
             SaveState();
@@ -91,7 +122,7 @@ namespace StateMigrationApp
                 string json = JsonSerializer.Serialize(_state, options);
                 File.WriteAllText(StateFile, json);
 
-                Console.WriteLine($"[{ContainerName}] State savedto {StateFile}");
+                Console.WriteLine($"[{ContainerName}] State saved to {StateFile}");
             }
             catch (Exception ex)
             {

@@ -36,38 +36,31 @@ sleep 5
 echo "Logs from host-b (should show resumed state):"
 docker logs container-host-b
 
-# #Create the project structure if it doesn't exist
-# if [ ! -f "StateMigrationApp.cs" ]; then
-#     echo "Creating StateMigrationApp file"
-# fi
 
-# if [ ! -f "StateMigratiionSimulation.csproj" ]; then
-#     echo "Creating project file..."
-# fi
+echo "Stopping container-host-b gracefully to save state..."
+docker-compose stop container-host-b
 
-# echo "Starting containers..."
-# docker-compose up -d
+echo "Migrating... Starting application on container-host-c"
+docker-compose up -d container-host-c
+echo "Allowing host-c to start and process..."
+sleep 5
+echo "Logs from host-c (should show resumed state):"
+docker logs container-host-c
 
-# echo "Waiting for containers to be ready..."
-# sleep 5
+echo ""
+echo "Container Status"
+docker ps --format "table{{.Names}}\t{{.Status}}\t{{.Ports}}"
 
-# echo "Running migration simulation..."
-# docker exec -it migration-simulator dotnet StateMigrationSimulation.dll
+echo ""
+echo "To view logs from a specific container:"
+echo "docker logs container-host-a"
+echo "docker logs container-host-b" 
+echo "docker logs container-host-c"
 
-# echo ""
-# echo "Container Status"
-# docker ps --format "table{{.Names}}\t{{.Status}}\t{{.Ports}}"
+echo ""
+echo "To stop the simulation:"
+echo "docker-compose down"
 
-# echo ""
-# echo "To view logs from a specific container:"
-# echo "docker logs container-host-a"
-# echo "docker logs container-host-b" 
-# echo "docker logs container-host-c"
-
-# echo ""
-# echo "To stop the simulation:"
-# echo "docker-compose down"
-
-# echo ""
-# echo "To view shared state volume:"
-# echo "docker exec -it migration-simulator ls -la /app/snapshots"
+echo ""
+echo "To view shared state volume:"
+echo "docker exec -it migration-simulator ls -la /app/snapshots"
