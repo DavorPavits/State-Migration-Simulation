@@ -15,7 +15,7 @@ namespace StateMigrationApp
 
     class Program
     {
-        private static readonly string StateFile = "/shared/app_state.json";
+        private static readonly string StateFile = "/app/snapshots/app_state.json";
         private static readonly string ContainerName = Environment.GetEnvironmentVariable("CONTAINER_NAME") ?? "unknown";
         private static AppState _state = new AppState();
         private static bool _running = true;
@@ -24,6 +24,7 @@ namespace StateMigrationApp
         {
             Console.WriteLine($"---Starting Application on {ContainerName}---");
 
+            
             //Try to load existing state
             LoadState();
 
